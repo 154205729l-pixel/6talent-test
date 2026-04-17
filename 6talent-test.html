@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>天赋潜能测试</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'PingFang SC',sans-serif;background:#0d0d1a;color:#fff;min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh;padding:20px}
+.screen.active{display:flex;flex-direction:column;align-items:center}
+
+/* 封面 */
+#cover{background:linear-gradient(135deg,#0d0d1a 0%,#1a0a2e 50%,#0d1a2e 100%);justify-content:center;text-align:center}
+.cover-icon{font-size:72px;margin-bottom:20px;filter:drop-shadow(0 0 20px #7c3aed)}
+.cover-title{font-size:28px;font-weight:700;background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px}
+.cover-sub{font-size:14px;color:#8b8fa8;margin-bottom:24px}
+.cover-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:32px;max-width:320px}
+.tag{padding:4px 10px;border-radius:20px;font-size:11px;border:1px solid}
+.btn-start{padding:16px 60px;border-radius:50px;border:none;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font-size:18px;font-weight:600;cursor:pointer;box-shadow:0 0 30px #7c3aed66;letter-spacing:2px}
+
+/* 答题 */
+#quiz{background:#0d0d1a;padding:20px}
+.progress-bar{width:100%;height:4px;background:#1e1e3a;border-radius:2px;margin-bottom:24px}
+.progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#7c3aed,#2563eb);transition:width .4s}
+.q-num{font-size:12px;color:#6b7280;margin-bottom:8px;text-align:center}
+.q-text{font-size:17px;line-height:1.6;text-align:center;margin-bottom:28px;min-height:56px;color:#e5e7eb}
+.options{width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px}
+.opt{padding:13px 16px;border-radius:12px;border:1px solid #2a2a4a;background:#13132a;color:#d1d5db;font-size:14px;cursor:pointer;transition:all .2s;text-align:left;line-height:1.5}
+.opt.selected{border-color:#7c3aed;background:#7c3aed22;color:#a78bfa}
+
+/* 加载 */
+#loading{background:#0d0d1a;justify-content:center;text-align:center}
+.loading-ring{width:80px;height:80px;border:3px solid #1e1e3a;border-top-color:#7c3aed;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:#8b8fa8;font-size:14px}
+
+/* 简版结果 */
+#result-simple{background:linear-gradient(180deg,#0d0d1a 0%,#1a0a2e 100%);padding:20px 20px 40px}
+.simple-header{text-align:center;margin-bottom:20px;width:100%}
+.simple-title{font-size:22px;font-weight:700;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.simple-sub{font-size:13px;color:#8b8fa8}
+.top-talent{width:100%;max-width:400px;background:#13132a;border-radius:16px;padding:18px;margin-bottom:20px;border:1px solid #2a2a4a}
+.top-label{font-size:12px;color:#6b7280;margin-bottom:6px}
+.top-name{font-size:20px;font-weight:700;margin-bottom:8px}
+.top-desc{font-size:14px;color:#9ca3af;line-height:1.7}
+/* 模糊雷达 */
+.blur-wrap{width:100%;max-width:360px;margin:0 auto 20px;position:relative}
+.blur-wrap canvas{width:100%;height:auto;display:block}
+.blur-overlay{position:absolute;inset:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(13,13,26,0.5);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.blur-tip{font-size:13px;color:#a78bfa;text-align:center;padding:0 20px}
+/* 广告解锁区 */
+.unlock-box{width:100%;max-width:400px;background:linear-gradient(135deg,#1a0a2e,#0d1a2e);border:1px solid #7c3aed44;border-radius:16px;padding:20px;text-align:center;margin-bottom:20px}
+.unlock-icon{font-size:36px;margin-bottom:10px}
+.unlock-title{font-size:16px;font-weight:600;margin-bottom:6px;color:#e5e7eb}
+.unlock-desc{font-size:13px;color:#8b8fa8;margin-bottom:16px;line-height:1.6}
+.unlock-list{text-align:left;margin-bottom:16px;display:flex;flex-direction:column;gap:6px}
+.unlock-item{font-size:13px;color:#a78bfa;display:flex;align-items:center;gap:6px}
+.btn-ad{padding:14px 0;width:100%;border-radius:50px;border:none;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 0 20px #7c3aed44;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-ad:disabled{opacity:.62}
+.btn-retry-s{padding:10px 30px;border-radius:50px;border:1px solid #3a3a5a;background:transparent;color:#8b8fa8;font-size:14px;cursor:pointer;margin-top:8px}
+
+/* 广告弹窗 */
+#ad-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:100;flex-direction:column;align-items:center;justify-content:center}
+#ad-modal.active{display:flex}
+.ad-box{width:90%;max-width:360px;background:#13132a;border-radius:20px;overflow:hidden;border:1px solid #2a2a4a}
+.ad-video-area{width:100%;aspect-ratio:16/9;background:#000;display:flex;align-items:center;justify-content:center;position:relative}
+.ad-fake-video{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:linear-gradient(135deg,#1a0a2e,#0d1a2e)}
+.ad-play-icon{font-size:48px;opacity:0.8}
+.ad-brand{font-size:13px;color:#6b7280}
+.ad-countdown{position:absolute;top:10px;right:12px;background:rgba(0,0,0,0.7);padding:4px 10px;border-radius:20px;font-size:13px;color:#fff}
+.ad-skip{display:none;position:absolute;top:10px;right:12px;background:rgba(0,0,0,0.7);padding:4px 10px;border-radius:20px;font-size:13px;color:#fff;cursor:pointer;border:1px solid #ffffff44}
+.ad-info{padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+.ad-info-text{font-size:12px;color:#6b7280}
+.ad-progress{width:100%;height:3px;background:#1e1e3a}
+.ad-progress-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#2563eb);transition:width .3s linear}
+
+/* 完整结果 */
+#result-full{background:linear-gradient(180deg,#0d0d1a 0%,#1a0a2e 100%);padding:20px 20px 40px}
+.full-header{text-align:center;margin-bottom:20px;width:100%}
+.full-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;background:#7c3aed22;border:1px solid #7c3aed44;color:#a78bfa;margin-bottom:10px}
+.full-title{font-size:22px;font-weight:700;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.full-sub{font-size:13px;color:#8b8fa8}
+.canvas-wrap{width:100%;max-width:380px;margin:0 auto 20px}
+canvas{width:100%;height:auto;display:block}
+.talent-bars{width:100%;max-width:400px;margin-bottom:20px}
+.bar-item{margin-bottom:12px}
+.bar-label{display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px}
+.bar-name{color:#d1d5db}
+.bar-val{font-weight:600}
+.bar-track{height:7px;background:#1e1e3a;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 1s ease}
+.detail-cards{width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.d-card{background:#13132a;border-radius:12px;padding:14px;border:1px solid #2a2a4a}
+.d-card-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.d-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.d-card-name{font-size:14px;font-weight:600}
+.d-card-score{font-size:12px;margin-left:auto}
+.d-card-desc{font-size:13px;color:#9ca3af;line-height:1.6}
+.btn-retry{padding:10px 30px;border-radius:50px;border:1px solid #3a3a5a;background:transparent;color:#8b8fa8;font-size:14px;cursor:pointer;margin-top:10px}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(19,19,42,.92);border:1px solid #2a2a4a;color:#e5e7eb;padding:10px 22px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- 封面 -->
+<div id="cover" class="screen active">
+  <div class="cover-icon">🔮</div>
+  <div class="cover-title">天赋潜能测试</div>
+  <div class="cover-sub">发现你独特的十维天赋密码</div>
+  <div class="cover-tags">
+    <span class="tag" style="color:#a78bfa;border-color:#a78bfa44;background:#a78bfa11">逻辑</span>
+    <span class="tag" style="color:#60a5fa;border-color:#60a5fa44;background:#60a5fa11">创造</span>
+    <span class="tag" style="color:#34d399;border-color:#34d39944;background:#34d39911">社交</span>
+    <span class="tag" style="color:#f59e0b;border-color:#f59e0b44;background:#f59e0b11">领导</span>
+    <span class="tag" style="color:#f472b6;border-color:#f472b644;background:#f472b611">艺术</span>
+    <span class="tag" style="color:#fb7185;border-color:#fb718544;background:#fb718511">直觉</span>
+    <span class="tag" style="color:#38bdf8;border-color:#38bdf844;background:#38bdf811">语言</span>
+    <span class="tag" style="color:#a3e635;border-color:#a3e63544;background:#a3e63511">运动</span>
+    <span class="tag" style="color:#e879f9;border-color:#e879f944;background:#e879f911">记忆</span>
+    <span class="tag" style="color:#fbbf24;border-color:#fbbf2444;background:#fbbf2411">空间</span>
+  </div>
+  <div style="color:#6b7280;font-size:13px;margin-bottom:30px">20题 · 约3分钟 · 十维天赋图谱</div>
+  <button class="btn-start" onclick="startQuiz()">开始测试</button>
+</div>
+
+<!-- 答题 -->
+<div id="quiz" class="screen">
+  <div class="progress-bar"><div class="progress-fill" id="pbar"></div></div>
+  <div class="q-num" id="qnum"></div>
+  <div class="q-text" id="qtext"></div>
+  <div class="options" id="opts"></div>
+</div>
+
+<!-- 加载 -->
+<div id="loading" class="screen">
+  <div class="loading-ring"></div>
+  <div class="loading-text">正在解析你的天赋图谱...</div>
+</div>
+
+<!-- 简版结果 -->
+<div id="result-simple" class="screen">
+  <div class="simple-header">
+    <div class="simple-title" id="s-title"></div>
+    <div class="simple-sub">十维天赋图谱已生成（预览版）</div>
+  </div>
+  <div class="top-talent" id="s-top-card"></div>
+  <div class="blur-wrap">
+    <canvas id="radar-blur" width="380" height="340"></canvas>
+    <div class="blur-overlay">
+      <div style="font-size:28px">🔒</div>
+      <div class="blur-tip">完整天赋图谱已生成<br>观看视频后立即解锁</div>
+    </div>
+  </div>
+  <div class="unlock-box">
+    <div class="unlock-icon">🎁</div>
+    <div class="unlock-title">解锁完整天赋报告</div>
+    <div class="unlock-desc">观看一段激励视频，即可解锁你的完整十维天赋分析</div>
+    <div class="unlock-list">
+      <div class="unlock-item">✦ 十维天赋雷达图谱</div>
+      <div class="unlock-item">✦ 各维度详细百分比</div>
+      <div class="unlock-item">✦ 每项天赋深度解析</div>
+      <div class="unlock-item">✦ 专属天赋发展建议</div>
+    </div>
+    <button class="btn-ad" onclick="showAd()">
+      <span>▶</span> 查看激励视频解锁完整报告
+    </button>
+  </div>
+  <button class="btn-retry-s" onclick="retry()">重新测试</button>
+</div>
+
+<!-- 广告弹窗 -->
+<div id="ad-modal">
+  <div class="ad-box">
+    <div class="ad-progress"><div class="ad-progress-fill" id="ad-prog"></div></div>
+    <div class="ad-video-area">
+      <div class="ad-fake-video">
+        <div class="ad-play-icon">▶</div>
+        <div class="ad-brand">正在拉起激励视频</div>
+      </div>
+      <div class="ad-countdown" id="ad-count"></div>
+      <div class="ad-skip" id="ad-skip" onclick="skipAd()">取消等待，重新观看</div>
+    </div>
+    <div class="ad-info">
+      <span class="ad-info-text">激励视频</span>
+      <span class="ad-info-text" id="ad-info-r"></span>
+    </div>
+  </div>
+</div>
+
+<!-- 完整结果 -->
+<div id="result-full" class="screen">
+  <div class="full-header">
+    <div class="full-badge">完整天赋报告</div>
+    <div class="full-title" id="f-title"></div>
+    <div class="full-sub">十维天赋图谱</div>
+  </div>
+  <div class="canvas-wrap"><canvas id="radar-full" width="380" height="340"></canvas></div>
+  <div class="talent-bars" id="f-bars"></div>
+  <div class="top-talent" id="f-top-card" style="margin-bottom:16px"></div>
+  <div class="detail-cards" id="f-detail-cards"></div>
+  <button class="btn-retry" onclick="retry()">重新测试</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 内嵌 ToBid 激励视频桥接组件，部署 6talent-test.html 时不再依赖外部 JS 文件 =====
+/*
+ * ToBid H5 rewarded-video bridge.
+ *
+ * This file only wraps the App WebView bridge methods:
+ * adRequest, preLoadVideo and connectVideo.
+ *
+ * Business rules such as "unlock after 8 seconds" should live in each game page,
+ * because different games may use different reward policies.
+ */
+(function (root) {
+  "use strict";
+
+  var DEFAULTS = {
+    adUrl: "https://ap.dongqiudi.com/plat/v3",
+    pgid: "1.15.2",
+    origin: "tobid",
+    sdkId: "6362731749334746",
+    sceneId: "leagueCollect_14",
+    data: {},
+    bridgeTimeout: 5000,
+    // Some native bridge methods do not callback reliably; keep this short so
+    // the page layer can recover, retry or apply its own fallback policy.
+    callbackTimeout: 8000,
+    onLog: null
+  };
+
+  function extend(target) {
+    var i;
+    var key;
+    var source;
+    target = target || {};
+    for (i = 1; i < arguments.length; i += 1) {
+      source = arguments[i] || {};
+      for (key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+    return target;
+  }
+
+  function isFunction(value) {
+    return typeof value === "function";
+  }
+
+  function toError(error) {
+    if (error instanceof Error) return error;
+    return new Error(String(error || "unknown error"));
+  }
+
+  function safeJsonParse(value) {
+    if (typeof value !== "string") return value;
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return value;
+    }
+  }
+
+  function unwrapNativeResponse(response) {
+    var body = response && response._responseWrapedByNative ? response._responseWrapedByNative : response;
+    return safeJsonParse(body);
+  }
+
+  function findRewardAd(body) {
+    var data = body;
+    var i;
+    if (body && Object.prototype.toString.call(body.data) === "[object Array]") {
+      data = body.data;
+    }
+    if (Object.prototype.toString.call(data) !== "[object Array]") return null;
+    for (i = 0; i < data.length; i += 1) {
+      if (data[i] && data[i].ad_type === "sdk_rewarded_video") {
+        return data[i];
+      }
+    }
+    return null;
+  }
+
+  function ensureBridgeConnector() {
+    if (root.connectWebViewJavascriptBridge) return;
+
+    root.connectWebViewJavascriptBridge = function (callback) {
+      var iframe;
+
+      if (root.WebViewJavascriptBridge) {
+        if (!root.WebViewJavascriptBridge._messageHandler && root.WebViewJavascriptBridge.init) {
+          root.WebViewJavascriptBridge.init(function () {});
+        }
+        callback(root.WebViewJavascriptBridge);
+        return;
+      }
+
+      document.addEventListener("WebViewJavascriptBridgeReady", function () {
+        if (root.WebViewJavascriptBridge && !root.WebViewJavascriptBridge._messageHandler && root.WebViewJavascriptBridge.init) {
+          root.WebViewJavascriptBridge.init(function () {});
+        }
+        callback(root.WebViewJavascriptBridge);
+      }, false);
+
+      if (root.WVJBCallbacks) {
+        root.WVJBCallbacks.push(callback);
+        return;
+      }
+
+      root.WVJBCallbacks = [callback];
+      iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = "https://__bridge_loaded__";
+      document.documentElement.appendChild(iframe);
+      setTimeout(function () {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      }, 0);
+    };
+  }
+
+  function RewardVideoBridge(options) {
+    this.options = extend({}, DEFAULTS, options || {});
+    this.currentPayload = null;
+  }
+
+  RewardVideoBridge.prototype.log = function (title, data) {
+    if (isFunction(this.options.onLog)) {
+      this.options.onLog(title, data);
+    }
+    if (root.console && root.console.log) {
+      root.console.log("[RewardVideoBridge] " + title, data || "");
+    }
+  };
+
+  RewardVideoBridge.prototype.getBridge = function (callback) {
+    var self = this;
+    var done = false;
+    var timer;
+
+    ensureBridgeConnector();
+
+    timer = setTimeout(function () {
+      if (done) return;
+      done = true;
+      callback(new Error("未检测到 WebViewJavascriptBridge"));
+    }, this.options.bridgeTimeout);
+
+    root.connectWebViewJavascriptBridge(function (bridge) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (bridge && bridge.callHandler) {
+        self.log("bridge ready");
+        callback(null, bridge);
+      } else {
+        callback(new Error("桥对象存在，但没有 callHandler 方法"));
+      }
+    });
+  };
+
+  RewardVideoBridge.prototype.callHandler = function (name, params, callback) {
+    var self = this;
+    var cb = isFunction(callback) ? callback : function () {};
+
+    this.log("callHandler: " + name, params);
+    this.getBridge(function (bridgeError, bridge) {
+      var done;
+      var timer;
+
+      if (bridgeError) {
+        self.log(name + " bridge error", { message: bridgeError.message });
+        cb(bridgeError);
+        return;
+      }
+
+      done = false;
+      timer = setTimeout(function () {
+        if (done) return;
+        done = true;
+        self.log(name + " callback timeout");
+        cb(null, null, { timeout: true });
+      }, self.options.callbackTimeout);
+
+      try {
+        bridge.callHandler(name, params || {}, function (response) {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          self.log(name + " callback", response);
+          cb(null, response, { timeout: false });
+        });
+      } catch (error) {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        self.log(name + " call error", { message: error.message });
+        cb(error);
+      }
+    });
+  };
+
+  RewardVideoBridge.prototype.detectBridge = function (callback) {
+    this.getBridge(function (error) {
+      if (isFunction(callback)) callback(error || null);
+    });
+  };
+
+  RewardVideoBridge.prototype.buildDefaultPayload = function (options) {
+    var opts = extend({}, this.options, options || {});
+    if (!opts.sdkId && !opts.sdk_id) {
+      throw new Error("缺少 sdkId，无法请求激励视频广告位");
+    }
+    return {
+      origin: opts.origin || "",
+      sdk_id: opts.sdk_id || opts.sdkId,
+      imp_mon_arr: opts.imp_mon_arr || opts.impMonArr || [],
+      click_mon_arr: opts.click_mon_arr || opts.clickMonArr || [],
+      ct: opts.ct || "",
+      pgid: opts.pgid || this.options.pgid
+    };
+  };
+
+  RewardVideoBridge.prototype.setPayload = function (payload) {
+    this.currentPayload = extend({}, payload || {});
+    return this.currentPayload;
+  };
+
+  RewardVideoBridge.prototype.getPayload = function () {
+    return this.currentPayload;
+  };
+
+  RewardVideoBridge.prototype.preloadPayload = function (payload, callback) {
+    var finalPayload = this.setPayload(payload);
+    this.callHandler("preLoadVideo", finalPayload, callback);
+  };
+
+  RewardVideoBridge.prototype.preload = function (options, callback) {
+    var payload;
+    var cb = callback;
+    if (isFunction(options)) {
+      cb = options;
+      options = {};
+    }
+
+    try {
+      payload = this.buildDefaultPayload(options);
+    } catch (error) {
+      if (isFunction(cb)) cb(toError(error));
+      return;
+    }
+
+    this.preloadPayload(payload, cb);
+  };
+
+  RewardVideoBridge.prototype.loadFromConfig = function (options, callback) {
+    var self = this;
+    var opts = options || {};
+    var cb = callback;
+
+    if (isFunction(options)) {
+      cb = options;
+      opts = {};
+    }
+
+    this.callHandler("adRequest", {
+      method: "get",
+      url: opts.adUrl || this.options.adUrl,
+      param: {
+        pgid: opts.pgid || this.options.pgid
+      }
+    }, function (error, response) {
+      var body;
+      var ad;
+      var payload;
+
+      if (error) {
+        if (isFunction(cb)) cb(error);
+        return;
+      }
+
+      body = unwrapNativeResponse(response);
+      self.log("adRequest unwrapped", body);
+      ad = findRewardAd(body);
+      if (!ad) {
+        if (isFunction(cb)) cb(new Error("adRequest 没找到 ad_type=sdk_rewarded_video 的广告"));
+        return;
+      }
+
+      payload = {
+        origin: ad.ad_source && ad.ad_source.sdk_origin,
+        sdk_id: ad.ad_source && ad.ad_source.sdk_position_id,
+        imp_mon_arr: ad.imp_mon_arr || [],
+        click_mon_arr: ad.click_mon_arr || [],
+        ct: "",
+        pgid: opts.pgid || self.options.pgid
+      };
+
+      if (!payload.sdk_id) {
+        if (isFunction(cb)) cb(new Error("广告配置里没有 ad_source.sdk_position_id"));
+        return;
+      }
+
+      self.preloadPayload(payload, function (preloadError, preloadResponse, meta) {
+        if (isFunction(cb)) cb(preloadError || null, payload, preloadResponse, meta);
+      });
+    });
+  };
+
+  RewardVideoBridge.prototype.show = function (options, callback) {
+    var opts = options || {};
+    var cb = callback;
+    var base;
+    var payload;
+
+    if (isFunction(options)) {
+      cb = options;
+      opts = {};
+    }
+
+    try {
+      base = this.currentPayload || this.buildDefaultPayload(opts);
+      payload = extend({
+        id: opts.id || opts.sceneId || this.options.sceneId,
+        data: opts.data || this.options.data || {}
+      }, base);
+    } catch (error) {
+      if (isFunction(cb)) cb(toError(error));
+      return;
+    }
+
+    this.callHandler("connectVideo", payload, cb);
+  };
+
+  RewardVideoBridge.prototype.preloadThenShow = function (options, callback) {
+    var self = this;
+    var opts = options || {};
+    var cb = callback;
+
+    if (isFunction(options)) {
+      cb = options;
+      opts = {};
+    }
+
+    this.preload(opts, function (error) {
+      if (error) {
+        if (isFunction(cb)) cb(error);
+        return;
+      }
+      self.show(opts, cb);
+    });
+  };
+
+  RewardVideoBridge.prototype.loadFromConfigThenShow = function (options, callback) {
+    var self = this;
+    var opts = options || {};
+    var cb = callback;
+
+    if (isFunction(options)) {
+      cb = options;
+      opts = {};
+    }
+
+    this.loadFromConfig(opts, function (error) {
+      if (error) {
+        if (isFunction(cb)) cb(error);
+        return;
+      }
+      self.show(opts, cb);
+    });
+  };
+
+  root.RewardVideoBridge = {
+    create: function (options) {
+      return new RewardVideoBridge(options);
+    },
+    Constructor: RewardVideoBridge
+  };
+})(window);
+
+</script>
+<script>
+const TALENTS = {
+  A:{name:'逻辑推理',color:'#a78bfa',desc:'善于分析推理，从复杂信息中找规律，适合科研、编程、数学领域。'},
+  B:{name:'创意思维',color:'#60a5fa',desc:'思维天马行空，善于打破常规，在设计、写作、产品创新领域潜力突出。'},
+  C:{name:'社交共情',color:'#34d399',desc:'对他人情绪高度敏感，善于建立信任，在教育、咨询、公关领域极具天赋。'},
+  D:{name:'领导执行',color:'#f59e0b',desc:'目标感强、行动力足，善于组织资源推动结果，天生的管理者与创业者。'},
+  E:{name:'艺术感知',color:'#f472b6',desc:'对美有独特感受力，能捕捉细节与情感，在音乐、视觉艺术、文学领域潜力无限。'},
+  F:{name:'直觉洞察',color:'#fb7185',desc:'直觉超强，能快速感知本质，在战略、投资、心理领域有独特优势。'},
+  G:{name:'语言表达',color:'#38bdf8',desc:'语言天赋出众，善于用文字和语言打动人心，在写作、演讲、传播领域大放异彩。'},
+  H:{name:'运动协调',color:'#a3e635',desc:'身体协调性强，反应敏捷，在体育、舞蹈、手工技艺等领域有天然优势。'},
+  I:{name:'记忆整合',color:'#e879f9',desc:'记忆力超群，善于整合信息构建知识体系，在学术研究、历史、法律领域表现卓越。'},
+  J:{name:'空间想象',color:'#fbbf24',desc:'空间感知能力强，善于在脑海中构建三维模型，在建筑、工程、游戏设计领域极具潜力。'}
+};
+
+const KEYS = ['A','B','C','D','E','F','G','H','I','J'];
+
+const QS = [
+  {q:'面对复杂问题，你最先做什么？',opts:[['拆解逻辑逐步分析','A'],['脑洞大开想新方案','B'],['找人讨论集思广益','C'],['立刻制定行动计划','D']]},
+  {q:'你最享受哪种创作？',opts:[['写代码或解数学题','A'],['画画、写故事、做设计','E'],['写演讲稿或文章','G'],['设计建筑或游戏地图','J']]},
+  {q:'朋友遇到困难，你第一反应？',opts:[['分析原因给出方案','A'],['陪伴倾听给予安慰','C'],['立刻行动帮他解决','D'],['感觉到他真正需要什么','F']]},
+  {q:'你在团队中通常扮演？',opts:[['数据分析师','A'],['创意策划师','B'],['团队协调者','C'],['项目负责人','D']]},
+  {q:'空闲时间你最可能在做什么？',opts:[['解谜/编程/下棋','A'],['画画/写作/做手工','E'],['和朋友聊天聚会','C'],['运动/跳舞/健身','H']]},
+  {q:'你觉得自己记忆力如何？',opts:[['超强，过目不忘','I'],['一般，靠笔记辅助','A'],['对情感记忆特别深刻','C'],['对空间位置记忆很好','J']]},
+  {q:'你最擅长的表达方式是？',opts:[['逻辑严密的文字','A'],['生动有趣的口头表达','G'],['肢体语言和表演','H'],['视觉图像和设计','E']]},
+  {q:'做决定时，你更依赖？',opts:[['数据和逻辑','A'],['新奇的可能性','B'],['他人的感受','C'],['内心的直觉','F']]},
+  {q:'你对空间和方向的感知？',opts:[['极强，天生导航仪','J'],['一般，靠地图','A'],['靠感觉，有时会迷路','F'],['通过身体记忆方向','H']]},
+  {q:'你最喜欢哪类内容？',opts:[['科学/哲学/逻辑推理','A'],['艺术/诗歌/美学','E'],['商业/管理/成功学','D'],['语言/文学/演讲','G']]},
+  {q:'你在压力下通常会？',opts:[['冷静分析找最优解','A'],['脑洞大开想出奇招','B'],['寻求支持抱团取暖','C'],['加速行动迎难而上','D']]},
+  {q:'你学新技能时最先关注？',opts:[['底层原理和逻辑','A'],['能做出什么新东西','B'],['多久能达到目标','D'],['这件事美不美有没有感觉','E']]},
+  {q:'你对音乐和节奏的感受？',opts:[['能精准感知节拍和旋律','E'],['喜欢用身体跟着律动','H'],['喜欢分析音乐结构','A'],['音乐让我感受到情绪','C']]},
+  {q:'你最欣赏哪种人？',opts:[['逻辑清晰、博学多才','A'],['才华横溢、有艺术气质','E'],['雷厉风行、成事高手','D'],['深不可测、洞察人心','F']]},
+  {q:'如果可以选择超能力，你会选？',opts:[['瞬间掌握所有知识','I'],['无限创造任何事物','B'],['感知所有人的情绪','C'],['预见未来','F']]},
+  {q:'你在团队中最容易被认可的是？',opts:[['分析问题的能力','A'],['提出新想法的能力','B'],['调节气氛的能力','C'],['审美与表达能力','E']]},
+  {q:'你对语言学习的感受？',opts:[['很快能掌握语感和发音','G'],['靠系统学习语法规则','A'],['通过大量阅读积累','I'],['靠肢体和情境记忆','H']]},
+  {q:'你最享受哪种成就感？',opts:[['解开了一个难题','A'],['做出了前所未有的东西','B'],['让一个人感到被理解','C'],['完成了一个大目标','D']]},
+  {q:'你对自己身体协调性的评价？',opts:[['很强，运动上手快','H'],['一般，需要多练习','A'],['手部精细动作很好','E'],['节奏感和平衡感强','H']]},
+  {q:'你认为自己最大的潜力在？',opts:[['理解和创造知识体系','I'],['用语言影响和打动人','G'],['在三维空间中构建创造','J'],['用直觉判断复杂局势','F']]}
+];
+
+let scores={}, cur=0;
+let rewardAd=null,rewardAdInited=false,rewardAdLoading=false,rewardAdSessionId=0;
+let rewardAdUnlockTimer=null,rewardAdLaunchFallbackTimer=null,rewardAdProgressTimer=null;
+let rewardAdWatchStartedAt=0,rewardAdWatchDelay=8000;
+const rewardAdLogPrefix='[talent-test-reward]';
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+
+function startQuiz(){
+  scores={};KEYS.forEach(k=>scores[k]=0);cur=0;show('quiz');renderQ();
+}
+
+function renderQ(){
+  const q=QS[cur];
+  document.getElementById('pbar').style.width=((cur/QS.length)*100)+'%';
+  document.getElementById('qnum').textContent=(cur+1)+' / '+QS.length;
+  document.getElementById('qtext').textContent=q.q;
+  const opts=document.getElementById('opts');
+  opts.innerHTML='';
+  q.opts.forEach(([text,key])=>{
+    const b=document.createElement('button');
+    b.className='opt';b.textContent=text;
+    b.onclick=()=>pick(key,b);
+    opts.appendChild(b);
+  });
+}
+
+function pick(key,el){
+  document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  scores[key]++;
+  setTimeout(()=>{cur++;if(cur<QS.length)renderQ();else showLoading()},400);
+}
+
+function showLoading(){show('loading');setTimeout(showSimpleResult,2000)}
+
+function getTopKey(){
+  return KEYS.reduce((a,b)=>scores[a]>=scores[b]?a:b);
+}
+
+function showSimpleResult(){
+  const topKey=getTopKey();
+  const t=TALENTS[topKey];
+  document.getElementById('s-title').textContent='你的主导天赋：'+t.name;
+  document.getElementById('s-top-card').innerHTML=`
+    <div class="top-label">主导天赋</div>
+    <div class="top-name" style="color:${t.color}">${t.name}</div>
+    <div class="top-desc">${t.desc}</div>`;
+  drawRadar('radar-blur');
+  show('result-simple');
+}
+
+function logRewardAd(title,data){
+  if(window.console&&console.log)console.log(rewardAdLogPrefix,title,data||'');
+}
+function initRewardAd(){
+  if(rewardAdInited)return !!rewardAd;
+  rewardAdInited=true;
+  if(!window.RewardVideoBridge){
+    toast('激励视频组件加载失败');
+    logRewardAd('RewardVideoBridge missing');
+    return false;
+  }
+  rewardAd=RewardVideoBridge.create({
+    origin:'tobid',
+    sdkId:'6362731749334746',
+    sceneId:'leagueCollect_14',
+    pgid:'1.15.2',
+    callbackTimeout:8000,
+    data:{from:'talent-test',reward:'unlock_full_report'},
+    onLog:logRewardAd
+  });
+  rewardAd.detectBridge(error=>{
+    if(error){logRewardAd('bridge detect failed',{message:error.message});return}
+    logRewardAd('bridge detected');
+  });
+  return true;
+}
+function preloadRewardAd(silent){
+  if(!rewardAd&&!initRewardAd())return;
+  rewardAd.preload((error,response,meta)=>{
+    if(error){
+      logRewardAd('preload failed',{message:error.message});
+      if(!silent)toast('激励视频预加载失败，请稍后再试');
+      return;
+    }
+    logRewardAd('preload called',{response,meta});
+  });
+}
+function setUnlockButtonLoading(loading){
+  const btn=document.querySelector('.btn-ad');
+  if(!btn)return;
+  btn.disabled=loading;
+  btn.innerHTML=loading?'<span>▶</span> 正在打开激励视频':'<span>▶</span> 查看激励视频解锁完整报告';
+}
+function showRewardAdOverlay(title,desc){
+  const modal=document.getElementById('ad-modal');
+  const prog=document.getElementById('ad-prog');
+  document.querySelector('.ad-brand').textContent=title;
+  document.getElementById('ad-count').style.display='block';
+  document.getElementById('ad-count').textContent='8s';
+  document.getElementById('ad-skip').style.display='block';
+  document.getElementById('ad-info-r').textContent=desc;
+  prog.style.width='0%';
+  modal.classList.add('active');
+}
+function clearRewardAdTimers(){
+  if(rewardAdUnlockTimer){clearTimeout(rewardAdUnlockTimer);rewardAdUnlockTimer=null}
+  if(rewardAdLaunchFallbackTimer){clearTimeout(rewardAdLaunchFallbackTimer);rewardAdLaunchFallbackTimer=null}
+  if(rewardAdProgressTimer){clearInterval(rewardAdProgressTimer);rewardAdProgressTimer=null}
+}
+function resetRewardAdWaiting(message){
+  rewardAdSessionId++;
+  rewardAdLoading=false;
+  rewardAdWatchStartedAt=0;
+  clearRewardAdTimers();
+  document.getElementById('ad-modal').classList.remove('active');
+  setUnlockButtonLoading(false);
+  if(message)toast(message);
+  setTimeout(()=>preloadRewardAd(true),500);
+}
+function completeRewardAdUnlock(sessionId,reason,response){
+  if(sessionId!==rewardAdSessionId||!rewardAdLoading)return;
+  rewardAdLoading=false;
+  rewardAdWatchStartedAt=0;
+  clearRewardAdTimers();
+  document.getElementById('ad-modal').classList.remove('active');
+  setUnlockButtonLoading(false);
+  logRewardAd('unlock full report',{reason,response:response||null});
+  toast('广告观看完成，正在打开完整报告');
+  showFullResult();
+  setTimeout(()=>preloadRewardAd(true),800);
+}
+function startRewardAdUnlockTimer(sessionId,reason){
+  if(sessionId!==rewardAdSessionId||!rewardAdLoading||rewardAdUnlockTimer)return;
+  const prog=document.getElementById('ad-prog');
+  rewardAdWatchStartedAt=Date.now();
+  prog.style.width='0%';
+  document.querySelector('.ad-brand').textContent='激励视频播放中';
+  document.getElementById('ad-info-r').textContent='8 秒后自动解锁完整报告';
+  logRewardAd('start 8s unlock timer',{reason});
+  rewardAdProgressTimer=setInterval(()=>{
+    const elapsed=Date.now()-rewardAdWatchStartedAt;
+    const pct=Math.min(100,elapsed/rewardAdWatchDelay*100);
+    const left=Math.max(0,Math.ceil((rewardAdWatchDelay-elapsed)/1000));
+    prog.style.width=pct+'%';
+    document.getElementById('ad-count').textContent=left>0?left+'s':'解锁中';
+    document.getElementById('ad-info-r').textContent=left>0?left+' 秒后自动解锁完整报告':'正在解锁完整报告';
+  },300);
+  rewardAdUnlockTimer=setTimeout(()=>completeRewardAdUnlock(sessionId,reason||'8s auto unlock'),rewardAdWatchDelay);
+}
+function handleRewardAdPageLeave(){
+  if(!rewardAdLoading)return;
+  startRewardAdUnlockTimer(rewardAdSessionId,'page leave');
+}
+function handleRewardAdPageReturn(){
+  if(!rewardAdLoading||!rewardAdWatchStartedAt)return;
+  if(Date.now()-rewardAdWatchStartedAt<rewardAdWatchDelay){
+    logRewardAd('return before 8s, reset reward state');
+    resetRewardAdWaiting('广告未观看满 8 秒，请重新观看');
+  }
+}
+function showAd(){
+  let sessionId;
+  if(rewardAdLoading)return;
+  if(!rewardAd&&!initRewardAd())return;
+  clearRewardAdTimers();
+  rewardAdSessionId++;
+  sessionId=rewardAdSessionId;
+  rewardAdWatchStartedAt=0;
+  rewardAdLoading=true;
+  setUnlockButtonLoading(true);
+  showRewardAdOverlay('正在拉起激励视频','进入广告后 8 秒自动解锁完整报告');
+  preloadRewardAd(true);
+  setTimeout(()=>{
+    if(sessionId!==rewardAdSessionId||!rewardAdLoading)return;
+    rewardAd.show({
+      data:{from:'talent-test',reward:'unlock_full_report'}
+    },(error,response,meta)=>{
+      if(sessionId!==rewardAdSessionId||!rewardAdLoading)return;
+      if(error){
+        logRewardAd('show failed',{message:error.message});
+        resetRewardAdWaiting();
+        toast('激励视频展示失败，请稍后再试');
+        return;
+      }
+      if(meta&&meta.timeout){
+        logRewardAd('show callback timeout, unlock by 8s fallback');
+        completeRewardAdUnlock(sessionId,'connectVideo 8s timeout',response);
+        return;
+      }
+      logRewardAd('connectVideo callback received',response);
+      startRewardAdUnlockTimer(sessionId,'connectVideo callback');
+    });
+    rewardAdLaunchFallbackTimer=setTimeout(()=>startRewardAdUnlockTimer(sessionId,'launch fallback'),1200);
+  },300);
+}
+function skipAd(){
+  resetRewardAdWaiting('已取消等待，可重新点击观看');
+}
+
+function showFullResult(){
+  const topKey=getTopKey();
+  const t=TALENTS[topKey];
+  document.getElementById('f-title').textContent='你的主导天赋：'+t.name;
+  document.getElementById('f-top-card').innerHTML=`
+    <div class="top-label">主导天赋</div>
+    <div class="top-name" style="color:${t.color}">${t.name}</div>
+    <div class="top-desc">${t.desc}</div>`;
+  drawRadar('radar-full');
+  renderBars();
+  renderDetails();
+  show('result-full');
+}
+
+function drawRadar(canvasId){
+  const canvas=document.getElementById(canvasId);
+  const ctx=canvas.getContext('2d');
+  const W=380,H=340,cx=W/2,cy=H/2+10,R=120;
+  ctx.clearRect(0,0,W,H);
+  const n=KEYS.length;
+  const total=KEYS.reduce((s,k)=>s+scores[k],0)||1;
+  const vals=KEYS.map(k=>scores[k]/total);
+  const maxV=Math.max(...vals)||1;
+  const norm=vals.map(v=>v/maxV);
+  const angle=i=>-Math.PI/2+(2*Math.PI/n)*i;
+  // 网格
+  [0.25,0.5,0.75,1].forEach(r=>{
+    ctx.beginPath();
+    KEYS.forEach((_,i)=>{const a=angle(i);ctx.lineTo(cx+Math.cos(a)*R*r,cy+Math.sin(a)*R*r)});
+    ctx.closePath();ctx.strokeStyle='#2a2a4a';ctx.lineWidth=1;ctx.stroke();
+  });
+  // 轴线
+  KEYS.forEach((_,i)=>{const a=angle(i);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);ctx.strokeStyle='#2a2a4a';ctx.lineWidth=1;ctx.stroke()});
+  // 填充
+  ctx.beginPath();
+  norm.forEach((v,i)=>{const a=angle(i);const r=R*v;i===0?ctx.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r):ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r)});
+  ctx.closePath();
+  const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
+  grad.addColorStop(0,'rgba(124,58,237,0.5)');grad.addColorStop(1,'rgba(37,99,235,0.15)');
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;ctx.stroke();
+  // 点
+  norm.forEach((v,i)=>{const a=angle(i);const r=R*v;ctx.beginPath();ctx.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,4,0,Math.PI*2);ctx.fillStyle=TALENTS[KEYS[i]].color;ctx.fill()});
+  // 标签
+  ctx.font='11px PingFang SC,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  KEYS.forEach((k,i)=>{
+    const a=angle(i);const lx=cx+Math.cos(a)*(R+22);const ly=cy+Math.sin(a)*(R+18);
+    ctx.fillStyle=TALENTS[k].color;ctx.fillText(TALENTS[k].name,lx,ly);
+  });
+}
+
+function renderBars(){
+  const total=KEYS.reduce((s,k)=>s+scores[k],0)||1;
+  document.getElementById('f-bars').innerHTML=KEYS.map(k=>{
+    const pct=Math.round((scores[k]/total)*100);
+    const t=TALENTS[k];
+    return `<div class="bar-item">
+      <div class="bar-label"><span class="bar-name">${t.name}</span><span class="bar-val" style="color:${t.color}">${pct}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${t.color}" data-w="${pct}%"></div></div>
+    </div>`;
+  }).join('');
+  setTimeout(()=>document.querySelectorAll('.bar-fill').forEach(el=>el.style.width=el.dataset.w),50);
+}
+
+function renderDetails(){
+  const total=KEYS.reduce((s,k)=>s+scores[k],0)||1;
+  const sorted=[...KEYS].sort((a,b)=>scores[b]-scores[a]);
+  document.getElementById('f-detail-cards').innerHTML=sorted.map(k=>{
+    const t=TALENTS[k];const pct=Math.round((scores[k]/total)*100);
+    return `<div class="d-card">
+      <div class="d-card-head"><div class="d-dot" style="background:${t.color}"></div><span class="d-card-name" style="color:${t.color}">${t.name}</span><span class="d-card-score" style="color:${t.color}">${pct}%</span></div>
+      <div class="d-card-desc">${t.desc}</div>
+    </div>`;
+  }).join('');
+}
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)handleRewardAdPageLeave();
+  else handleRewardAdPageReturn();
+});
+window.addEventListener('pagehide',handleRewardAdPageLeave);
+window.addEventListener('pageshow',handleRewardAdPageReturn);
+window.addEventListener('blur',handleRewardAdPageLeave);
+window.addEventListener('focus',handleRewardAdPageReturn);
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+function retry(){resetRewardAdWaiting();startQuiz()}
+preloadRewardAd(true);
+</script>
+</body>
+</html>
